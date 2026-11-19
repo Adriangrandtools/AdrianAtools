@@ -1,47 +1,38 @@
-
-name: Build Adrian Admin Tools
-
+name: Build APK
 on:
-  workflow_dispatch:
   push:
     branches: [main, master]
-
+  workflow_dispatch:
 permissions:
-  contents: read
-
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Download project
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - name: Unpack project
+        run: |
+          for z in *.zip; do unzip -q "$z" -d work; done
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-
-      - name: Setup Android
-        uses: android-actions/setup-android@v3
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
-
-      - name: Extract project
-        run: unzip -o Adrian_Admin_Tools_project.zip
-
-      - name: Build APK
-        run: |
-          cd AdrianAdminTools
-          gradle assembleDebug --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk ../Adrian-Admin-Tools.apk
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+          gradle-version: "8.9"
+      - name: Build
+        working-directory: work/AdrianAdminTools
+        run: gradle assembleDebug --no-daemon
+      - name: Rename APK
+        run: mv work/AdrianAdminTools/app/build/outputs/apk/debug/app-debug.apk Adrian-Admin-Tools.apk
+      - uses: actions/upload-artifact@v4
         with:
           name: Adrian-Admin-Tools-APK
           path: Adrian-Admin-Tools.apk
-          
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Adrian Admin Tools
+          body: Скачай Adrian-Admin-Tools.apk и установи.
+          files: Adrian-Admin-Tools.apk
